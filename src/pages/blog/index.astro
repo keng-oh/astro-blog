@@ -1,0 +1,18 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BlogList from '../../components/BlogList';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.created.valueOf() - a.data.created.valueOf())
+	.map((post) => ({
+		id: post.id,
+		title: post.data.title,
+		created: post.data.created,
+		tags: post.data.tags,
+	}));
+---
+
+<Layout title="記事一覧 | 余白ノート">
+	<BlogList posts={posts} />
+</Layout>

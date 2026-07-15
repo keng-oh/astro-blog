@@ -1,0 +1,291 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
+/* remark-gfm emits `sr-only` on the generated footnotes heading, but that
+   markup never passes through Tailwind's source scanner, so the utility
+   class is never generated. Define it by hand to keep it visually hidden. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* forest palette (see Claude Design project "Blog Design.dc.html") */
+:root {
+  --color-base-100: oklch(0.995 0.001 106);
+  --color-base-200: oklch(0.968 0.002 106);
+  --color-base-300: oklch(0.915 0.003 106);
+  --color-base-content: oklch(0.28 0.006 260);
+  --color-primary: oklch(0.5 0.09 150);
+  --color-primary-content: oklch(0.98 0.01 205);
+  --wl: oklch(0.52 0.11 330);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-base-100: oklch(0.205 0.006 260);
+    --color-base-200: oklch(0.248 0.007 260);
+    --color-base-300: oklch(0.315 0.008 260);
+    --color-base-content: oklch(0.86 0.006 260);
+    --color-primary: oklch(0.72 0.09 150);
+    --color-primary-content: oklch(0.18 0.02 195);
+    --wl: oklch(0.75 0.1 330);
+  }
+}
+
+body {
+  font-family:
+    'Hiragino Sans',
+    'Hiragino Kaku Gothic ProN',
+    'Yu Gothic',
+    YuGothic,
+    'Noto Sans JP',
+    Meiryo,
+    system-ui,
+    sans-serif;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+}
+
+.page {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 56px 64px;
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+  line-height: 1.85;
+  font-family: inherit;
+}
+.measure {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+.muted {
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+}
+.eyebrow {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.page hr {
+  border: none;
+  border-top: 1px solid var(--color-base-300);
+  margin: 28px 0;
+}
+.h-site {
+  font-size: 2.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0.5rem 0 0.3rem;
+}
+.h-page {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0.3rem 0 1.5rem;
+}
+.h-post {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+  margin: 0 0 1rem;
+}
+.lead {
+  max-width: 36ch;
+  margin: 0 auto;
+}
+.page a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--color-primary) 35%, transparent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.page a:hover {
+  text-decoration-color: var(--color-primary);
+}
+.page a.wikilink {
+  color: var(--wl);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--wl);
+  padding-bottom: 1px;
+}
+.page a.wikilink:hover {
+  border-bottom-style: solid;
+  text-decoration: none;
+}
+.rowlink {
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.metarow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.date {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  white-space: nowrap;
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+}
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+.footerlinks {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.lrow {
+  padding: 17px 0;
+  border-bottom: 1px solid var(--color-base-300);
+}
+.metaStack {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+  color: color-mix(in oklch, var(--color-base-content) 55%, transparent);
+}
+.crumbs {
+  margin-bottom: 18px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+}
+.doc h1,
+.doc h2,
+.doc h3 {
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+.doc h2 {
+  font-size: 1.35rem;
+  margin: 2.4rem 0 0.9rem;
+  padding-left: 16px;
+  position: relative;
+}
+.doc h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35em;
+  width: 6px;
+  height: 0.85em;
+  background: var(--color-primary);
+  border-radius: 1px;
+}
+.doc h3 {
+  font-size: 1.08rem;
+  margin: 1.7rem 0 0.5rem;
+}
+.doc p {
+  margin: 1.05rem 0;
+}
+.doc ul,
+.doc ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+.doc ul {
+  list-style: disc;
+}
+.doc ol {
+  list-style: decimal;
+}
+.doc li {
+  margin: 0.35rem 0;
+}
+.doc blockquote {
+  margin: 1.3rem 0;
+  padding: 0.6rem 0 0.6rem 1.1rem;
+  border-left: 3px solid var(--wl);
+  background: var(--color-base-200);
+  border-radius: 0 6px 6px 0;
+  color: color-mix(in oklch, var(--color-base-content) 78%, transparent);
+}
+.doc code {
+  background: var(--color-base-200);
+  padding: 0.12em 0.38em;
+  border-radius: 4px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+}
+.code {
+  margin: 1.4rem 0;
+  border: 1px solid var(--color-base-300);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-base-200);
+}
+.codehead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 14px;
+  background: var(--color-base-300);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+  letter-spacing: 0.03em;
+}
+.code pre {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  line-height: 1.65;
+}
+.code code {
+  display: block;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  white-space: pre;
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 36px 24px;
+  }
+  .h-site {
+    font-size: 1.85rem;
+  }
+  .h-post {
+    font-size: 1.45rem;
+  }
+  .h-page {
+    font-size: 1.45rem;
+  }
+  .doc h2 {
+    font-size: 1.2rem;
+  }
+  .rowlink {
+    font-size: 15px;
+  }
+}

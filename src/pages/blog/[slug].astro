@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BlogPost from '../../components/BlogPost';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('blog');
+	return posts.map((post) => ({
+		params: { slug: post.id },
+		props: { post },
+	}));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<Layout title={`${post.data.title} | 余白ノート`}>
+	<BlogPost
+		title={post.data.title}
+		created={post.data.created}
+		updated={post.data.updated}
+		tags={post.data.tags}
+	>
+		<Content />
+	</BlogPost>
+</Layout>
