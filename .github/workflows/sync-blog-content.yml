@@ -1,0 +1,40 @@
+name: Sync blog content from notes vault
+
+on:
+  repository_dispatch:
+    types: [notes-updated]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout astro-blog
+        uses: actions/checkout@v4
+
+      - name: Checkout notes vault
+        uses: actions/checkout@v4
+        with:
+          repository: keng-oh/notes
+          token: ${{ secrets.NOTES_REPO_TOKEN }}
+          path: notes-vault
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync active posts from vault
+        run: node scripts/sync-blog-content.mjs notes-vault/60_blog src/content/blog
+
+      - name: Commit and push if changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: sync blog content from notes vault"
+          file_pattern: "src/content/blog/**"

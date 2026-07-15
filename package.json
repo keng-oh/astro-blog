@@ -23,5 +23,8 @@
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.2",
     "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "gray-matter": "^4.0.3"
   }
 }
