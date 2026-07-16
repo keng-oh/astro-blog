@@ -14,7 +14,7 @@ status: active
 
 ## 全体構成
 
-```
+```text
 notes (このVault, private)
   └── 60_blog/                 ← ここに置いた status:active なノートだけが公開対象
         ↓ push (60_blog/** に変更があったとき)
