@@ -2,7 +2,7 @@
 title: 自宅サーバーの入口を Cloudflare Tunnel 中心から Tailscale 中心に組み替える
 aliases: []
 created: 2026-11-11
-updated: 2026-11-11
+updated: 2026-11-16
 tags:
   - project/home-server
   - tech/tool/tailscale
@@ -12,7 +12,7 @@ tags:
 status: active
 ---
 
-Proxmox 上で動かしている自分用のサービス群を、これまで Cloudflare Tunnel 経由でほぼすべて外に出していた。最近は AI を使った攻撃で既知の脆弱性が突かれるまでの時間が短くなっているので、「自分用は Tailscale からだけ、外に出すのは本当に公開したいものだけ」という構成に組み替えることにした。その設計をまとめておく。
+Proxmox 上で動かしている自分用のサービス群を、これまで Cloudflare Tunnel 経由でほぼすべて外に出していた。最近は AI を使った攻撃で既知の脆弱性が突かれるまでの時間が短くなっているので、「自分用は Tailscale からだけ、外に出すのは本当に公開したいものだけ」という構成に組み替えた。最終的には、内部のネットワークを外に出す入口はなくなった。その設計をまとめておく。
 
 ## これまでの構成
 
@@ -40,7 +40,7 @@ Proxmox 上で動かしている自分用のサービス群を、これまで Cl
 
 ```text
 [インターネット]
-  └─ Cloudflare ─ Tunnel ─ cloudflared ─ Caddy(http, localhost のみ) ─ 公開アプリ
+  └─ （内部のネットワークへの入口なし）
 
 [自分の端末（Tailscale を常時接続）]
   ① app.example.com → 公開 DNS が 192.168.1.201 を返す（DNS only）
@@ -60,13 +60,13 @@ Proxmox のホストだけは別に tailnet に入れる。管理画面がサブ
 
 ### DNS は公開 DNS にプライベートアドレスを書く
 
-`*.example.com` を、DNS only（Cloudflare のプロキシなし）でプロキシのプライベートアドレスに向ける。公開するアプリだけは、個別のレコードで Tunnel を指す。個別のレコードはワイルドカードより優先される。
+`*.example.com` を、DNS only（Cloudflare のプロキシなし）でプロキシのプライベートアドレスに向ける。ワイルドカードなので、サービスを足すときに DNS をさわる必要はない。
 
 - split DNS も Tailscale の DNS 設定も要らない。家でも外でも同じ URL で開ける
 - 答えは誰でも引けるが、tailnet に入っていなければ届かない
 - 端末の DNS は今までどおりなので、自宅が落ちてもスマホの普段の通信には影響しない
 
-一部のルーターや DNS は、DNS rebinding 対策でプライベートアドレスの答えを捨てることがある。使う回線と端末で引けることを、先にテスト用のレコードで確かめておく。
+一部のルーターや DNS は、DNS rebinding 対策でプライベートアドレスの答えを捨てることがある。うちの環境（ホームゲートウェイ、8.8.8.8、1.1.1.1）では問題なく引けたが、使う回線と端末で確かめておいたほうがいい。
 
 ### NPM をやめて Caddy にする
 
@@ -77,48 +77,46 @@ Tailscale に移すと、全ホストに HTTPS と送信元の制限を付け直
 	acme_dns cloudflare {env.CF_API_TOKEN}
 }
 
+# OPNsense 経由（= tailnet）からだけ受ける
 (private) {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
 	@outside not remote_ip 192.168.1.1
 	respond @outside 403
 }
 
-# 公開: Tunnel（同じホストの cloudflared）からだけ受ける
-http://public-app.example.com {
-	@notunnel not remote_ip 127.0.0.1
-	respond @notunnel 403
-	reverse_proxy 192.168.1.202:80
-}
-
-# 自分用: OPNsense 経由（= tailnet）からだけ受ける
 grafana.example.com {
 	import private
 	reverse_proxy 192.168.1.204:3000
+}
+
+# 同じセグメントの CT からも呼ぶホストは、その CT だけ許可に足す
+app.example.com {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	@outside not remote_ip 192.168.1.1 192.168.1.205
+	respond @outside 403
+	reverse_proxy 192.168.1.202:80
 }
 ```
 
 - 証明書は Let's Encrypt の DNS-01 で取る（`caddy-dns/cloudflare` を入れてビルドする）。外からの到達は要らない。API トークンは対象ゾーンの DNS 編集だけに絞る
 - 送信元で判定するので、Docker は `network_mode: host` で動かす
-- 公開アプリは `http://` の site として書く。TLS は Cloudflare のエッジで終端していて、Caddy の HTTPS 自動リダイレクトとぶつかってループするのを避けるため
+- 同じセグメントの CT は OPNsense を通らずに直接届くので、送信元はその CT のアドレスになる。CT 同士で URL を使って呼び合うなら、そのアドレスを許可に足す
 
-### 二重に塞ぐ
+### 公開していたアプリも内部専用にした
 
-- cloudflared の ingress は、公開するホスト名を明示的に並べ、最後を `http_status:404` にする
-- Caddy 側でも、自分用のホストは OPNsense 経由以外を 403 にする
+移行の途中までは、公開アプリだけを Tunnel に残していた。cloudflared の ingress に公開するホスト名だけを並べ、Caddy では Tunnel（localhost）からしか受けない形だ。
 
-どちらか片方を設定ミスしても、自分用のサービスは外に出ない。
-
-```yaml
-ingress:
-  - hostname: public-app.example.com
-    service: http://127.0.0.1:80
-  - service: http_status:404
-```
+ただ、そのアプリは新しいドメインで本番を別に立てることになり、今のものは検証環境として自分が使うだけになった。そこで、他のサービスと同じく tailnet からだけにし、cloudflared は撤去した。
 
 ## あわせて決めたこと
 
 - **AdGuard Home は廃止する**: スマホの DoH のためだけに外に出していた。家全体の DNS にはしていなかったので、やめても困らない。DNS を自宅に依存させないほうを取った
 - **n8n の MCP はローカルでつなぐ**: claude.ai のコネクタは Anthropic のクラウドから届くので、n8n を閉じると使えなくなる。使うのは自宅の Claude Code だけなので、そちらに MCP サーバーとして直接登録する
-- **公開アプリは DMZ に分ける（次の段階）**: 今は公開アプリも内部のセグメントにいる。本番は別の VM（Dokploy）を DMZ に置き、その中で cloudflared を動かす。そこまで進めば、内部のネットワークを通る外部公開はなくなる
+- **公開するアプリは DMZ から出す（次の段階）**: 本番は新しいドメインで別の VM（Dokploy）を DMZ に置き、その中で cloudflared を動かす。内部のセグメントは外部公開の経路に入れない
 
 ## 気をつけること
 
